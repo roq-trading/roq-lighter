@@ -7,8 +7,8 @@ depth_update_params_item.hpp
 depth_update_params_item_data.hpp
 depth_update_params_item_data_level.hpp
 error.hpp
-market_info_ack.hpp
-market_info_ack_item.hpp
+markets_ack.hpp
+markets_ack_item.hpp
 market_today_update.hpp
 market_today_update_params_item.hpp
 market_today_update_params_item_item.hpp
@@ -31,8 +31,8 @@ depth_update_params_item.cpp
 depth_update_params_item_data.cpp
 depth_update_params_item_data_level.cpp
 error.cpp
-market_info_ack.cpp
-market_info_ack_item.cpp
+markets_ack.cpp
+markets_ack_item.cpp
 market_today_update.cpp
 market_today_update_params_item.cpp
 market_today_update_params_item_item.cpp

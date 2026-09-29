@@ -20,7 +20,7 @@
 
 #include "roq/lighter/gateway/shared.hpp"
 
-#include "roq/lighter/protocol/json/market_info_ack.hpp"
+#include "roq/lighter/protocol/json/markets_ack.hpp"
 
 namespace roq {
 namespace lighter {
@@ -58,17 +58,17 @@ struct Rest final : public web::rest::Client::Handler {
 
   enum class State {
     UNDEFINED = 0,
-    GET_MARKET_INFO,
+    GET_MARKETS,
     DONE,
   };
 
   uint32_t download(State);
 
-  // instruments-info
+  // markets
 
-  void get_market_info();
-  void get_market_info_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<protocol::json::MarketInfoAck> const &);
+  void get_markets();
+  void get_markets_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<protocol::json::MarketsAck> const &);
 
   // helpers
 
@@ -88,7 +88,7 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile market_info, market_info_ack;
+    utils::metrics::Profile markets, markets_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;

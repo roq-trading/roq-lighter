@@ -12,8 +12,8 @@ set(AUTOGEN_SCHEMAS
     depth_update_params_item_data.json
     depth_update_params_item_data_level.json
     error.json
-    market_info_ack.json
-    market_info_ack_item.json
+    markets_ack.json
+    markets_ack_item.json
     market_today_update.json
     market_today_update_params_item.json
     market_today_update_params_item_item.json

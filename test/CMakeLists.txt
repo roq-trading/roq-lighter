@@ -5,7 +5,7 @@ set(TARGET_NAME ${PROJECT_NAME}-test)
 set(SOURCES
     json_book_ticker_update.cpp
     json_depth_update.cpp
-    json_market_info_ack.cpp
+    json_markets_ack.cpp
     json_market_today_update.cpp
     json_market_update.cpp
     json_pong.cpp

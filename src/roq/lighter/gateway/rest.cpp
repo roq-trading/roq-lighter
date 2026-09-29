@@ -17,10 +17,6 @@ namespace roq {
 namespace lighter {
 namespace gateway {
 
-// === TODO ===
-// => use rate limiter / request queue
-// => query instrument-info every N seconds
-
 // === CONSTANTS ===
 
 namespace {
@@ -89,8 +85,8 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .market_info = create_metrics(shared.settings, name_, "market_info"sv),
-          .market_info_ack = create_metrics(shared.settings, name_, "market_info_ack"sv),
+          .markets = create_metrics(shared.settings, name_, "markets"sv),
+          .markets_ack = create_metrics(shared.settings, name_, "markets_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -117,8 +113,8 @@ void Rest::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.market_info, metrics::Type::PROFILE)
-      .write(profile_.market_info_ack, metrics::Type::PROFILE)
+      .write(profile_.markets, metrics::Type::PROFILE)
+      .write(profile_.markets_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -178,9 +174,9 @@ uint32_t Rest::download(State state) {
     case UNDEFINED:
       assert(false);
       break;
-    case GET_MARKET_INFO:
-      (*this)(ConnectionStatus::DOWNLOADING, "get-instruments-info"sv);
-      get_market_info();
+    case GET_MARKETS:
+      (*this)(ConnectionStatus::DOWNLOADING, "get-markets"sv);
+      get_markets();
       return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -190,13 +186,13 @@ uint32_t Rest::download(State state) {
   return 0;
 }
 
-// instruments-info
+// markets
 
-void Rest::get_market_info() {
-  profile_.market_info([&]() {
+void Rest::get_markets() {
+  profile_.markets([&]() {
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.market_data.market_info,
+        .path = shared_.api.market_data.markets,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -207,15 +203,15 @@ void Rest::get_market_info() {
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_market_info_ack(event, sequence);
+      get_markets_ack(event, sequence);
     };
-    (*connection_)("market-instrument-info"sv, request, callback);
+    (*connection_)("markets"sv, request, callback);
   });
 }
 
-void Rest::get_market_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = State::GET_MARKET_INFO;
-  profile_.market_info_ack([&]() {
+void Rest::get_markets_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = State::GET_MARKETS;
+  profile_.markets_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -224,8 +220,8 @@ void Rest::get_market_info_ack(Trace<web::rest::Response> const &event, uint32_t
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        protocol::json::MarketInfoAck market_info_ack{body, decode_buffer_};
-        Trace event_2{event, market_info_ack};
+        protocol::json::MarketsAck markets_ack{body, decode_buffer_};
+        Trace event_2{event, markets_ack};
         (*this)(event_2);
         download_.check(STATE);
       }
@@ -234,36 +230,36 @@ void Rest::get_market_info_ack(Trace<web::rest::Response> const &event, uint32_t
   });
 }
 
-void Rest::operator()(Trace<protocol::json::MarketInfoAck> const &event) {
-  auto &[trace_info, market_info_ack] = event;
-  log::info<4>("market_info_ack={}"sv, market_info_ack);
+void Rest::operator()(Trace<protocol::json::MarketsAck> const &event) {
+  auto &[trace_info, markets_ack] = event;
+  log::info<4>("markets_ack={}"sv, markets_ack);
   std::vector<Symbol> symbols;
-  symbols.reserve(std::size(market_info_ack.data));  // alloc
+  symbols.reserve(std::size(markets_ack.data));  // alloc
   size_t counter = 0;
-  for (auto &item : market_info_ack.data) {
+  for (auto &item : markets_ack.data) {
     log::info<2>("item={}"sv, item);
-    auto discard = shared_.dispatcher.discard_symbol(item.name);
+    auto discard = shared_.dispatcher.discard_symbol(item.symbol);
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
-        .symbol = item.name,
-        .description = item.name,
-        .security_type = map(item.type),
-        .external_security_id = {},
+        .symbol = item.symbol,
+        .description = {},
+        .security_type = {},
+        .external_security_id = utils::safe_cast(item.market_index),
         .market_segment = {},
         .cfi_code = {},
-        .base_currency = item.money,   // XXX FIXME TODO CHECK
-        .quote_currency = item.stock,  // XXX FIXME TODO CHECK
+        .base_currency = {},
+        .quote_currency = {},
         .settlement_currency = {},
         .margin_currency = {},
         .commission_currency = {},
-        .tick_size = item.min_total,
+        .tick_size = NaN,
         .tick_size_steps = {},
         .multiplier = NaN,
         .min_notional = NaN,
-        .min_trade_vol = item.min_total,
-        .max_trade_vol = item.max_total,
-        .trade_vol_step_size = {},
+        .min_trade_vol = NaN,
+        .max_trade_vol = NaN,
+        .trade_vol_step_size = NaN,
         .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
@@ -280,11 +276,11 @@ void Rest::operator()(Trace<protocol::json::MarketInfoAck> const &event) {
     };
     create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
     if (discard) {
-      log::info<1>(R"(Drop symbol="{}")"sv, item.name);
+      log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
       continue;
     }
-    if (shared_.all_symbols.emplace(item.name).second) {  // only include new
-      symbols.emplace_back(item.name);
+    if (shared_.all_symbols.emplace(item.symbol).second) {  // only include new
+      symbols.emplace_back(item.symbol);
     }
     ++counter;
   }
@@ -295,7 +291,7 @@ void Rest::operator()(Trace<protocol::json::MarketInfoAck> const &event) {
     handler_(symbols_update);
   }
   if (counter > 0) {
-    log::info("Symbols {} / {}"sv, counter, std::size(market_info_ack.data));
+    log::info("Symbols {} / {}"sv, counter, std::size(markets_ack.data));
   }
 }
 
