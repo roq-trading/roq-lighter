@@ -1,0 +1,18 @@
+{
+  "name": "roq/lighter/protocol/json/Response",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "error",
+      "type": "roq/lighter/protocol/json/Error"
+    },
+    {
+      "name": "result",
+      "type": "roq/lighter/protocol/json/Result"
+    },
+    {
+      "name": "id",
+      "type": "std/int64"
+    }
+  ]
+}

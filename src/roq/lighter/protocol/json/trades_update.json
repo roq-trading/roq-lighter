@@ -1,0 +1,18 @@
+{
+  "name": "roq/lighter/protocol/json/TradesUpdate",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/int64"
+    },
+    {
+      "name": "method",
+      "type": "roq/lighter/protocol/json/Method"
+    },
+    {
+      "name": "params",
+      "type": "roq/lighter/protocol/json/TradesUpdateParamsItem"
+    }
+  ]
+}

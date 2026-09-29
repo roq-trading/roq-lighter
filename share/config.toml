@@ -1,0 +1,34 @@
+# config template for the roq-lighter gateway
+
+symbols = [
+  "^BTCUSD[A-Z]?$",  # spot + linear + inverse
+  "^BTC-.*-.*-[PC]$"  # options (e.g. "BTC-26SEP25-300000-P")
+]
+
+[accounts]
+
+  [accounts.A1]
+  master = true
+  login = "YOUR_LIGHTER_API_KEY_GOES_HERE"
+  secret = "YOUR_LIGHTER_SECRET_GOES_HERE"
+  symbols = [ ".*" ]
+
+[users]
+
+  [users.test]
+  password = "1234"
+  symbols = ".*"
+
+  [users.trader]
+  password = "secret"
+  accounts = [ "A1" ]
+  symbols = [ ".*BTC.*", ".*ETH.*" ]
+
+[rate_limits]
+
+  [rate_limits.global]
+    type = "ORDER_ACTION"
+    aggregate = true
+    request_limit = 100
+    monitor_period = "10s"
+    ban_period = "5m"

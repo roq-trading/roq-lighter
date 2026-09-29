@@ -1,0 +1,10 @@
+{
+  "name": "roq/lighter/protocol/json/Result",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "status",
+      "type": "std/string_view"
+    }
+  ]
+}

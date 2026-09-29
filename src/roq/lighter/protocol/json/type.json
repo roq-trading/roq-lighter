@@ -1,0 +1,15 @@
+{
+  "name": "roq/lighter/protocol/json/Type",
+  "type": "enum",
+  "values": [
+    {
+      "name": "spot"
+    },
+    {
+      "name": "futures"
+    },
+    {
+      "name": "tradfiFutures"
+    }
+  ]
+}

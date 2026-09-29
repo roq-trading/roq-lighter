@@ -1,0 +1,12 @@
+{
+  "name": "roq/lighter/protocol/json/TradeType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "buy"
+    },
+    {
+      "name": "sell"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+!!! THIS FILE HAS BEEN AUTO-GENERATED !!!
+roq-lighter-flags
+flags.rstinc
+mbp.rstinc
+misc.rstinc
+request.rstinc
+rest.rstinc
+ws.rstinc
+flags.hpp
+mbp.hpp
+misc.hpp
+request.hpp
+rest.hpp
+ws.hpp
+flags.cpp
+mbp.cpp
+misc.cpp
+request.cpp
+rest.cpp
+ws.cpp

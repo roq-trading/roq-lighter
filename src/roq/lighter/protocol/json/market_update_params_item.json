@@ -1,0 +1,14 @@
+{
+  "name": "roq/lighter/protocol/json/MarketUpdateParamsItem",
+  "type": "by_index",
+  "values": [
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "roq/lighter/protocol/json/MarketUpdateParamsItemItem"
+    }
+  ]
+}

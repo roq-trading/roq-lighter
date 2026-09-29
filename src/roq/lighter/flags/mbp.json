@@ -1,0 +1,13 @@
+{
+  "name": "roq/lighter/flags/MBP",
+  "type": "flags",
+  "prefix": "mbp_",
+  "values": [
+    {
+      "name": "allow_price_inversion",
+      "type": "std/bool",
+      "default": false,
+      "description": "Allow price inversion?"
+    }
+  ]
+}

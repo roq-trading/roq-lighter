@@ -1,0 +1,26 @@
+{
+  "name": "roq/lighter/flags/Flags",
+  "type": "flags",
+  "values": [
+    {
+      "name": "exchange",
+      "type": "std/string",
+      "required": true,
+      "default": "lighter",
+      "description": "Exchange identifier"
+    },
+    {
+      "name": "api",
+      "type": "std/string",
+      "required": true,
+      "default": "spot",
+      "description": "API (:code:`spot`, :code:`linear`, :code:`inverse` or :code:`option`)"
+    },
+    {
+      "name": "ws_api",
+      "type": "std/bool",
+      "default": false,
+      "description": "Use WebSocket API?"
+    }
+  ]
+}

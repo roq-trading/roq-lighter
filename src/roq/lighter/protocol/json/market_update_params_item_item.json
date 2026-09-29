@@ -1,0 +1,38 @@
+{
+  "name": "roq/lighter/protocol/json/MarketUpdateParamsItemItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "open",
+      "type": "std/double"
+    },
+    {
+      "name": "close",
+      "type": "std/double"
+    },
+    {
+      "name": "high",
+      "type": "std/double"
+    },
+    {
+      "name": "low",
+      "type": "std/double"
+    },
+    {
+      "name": "volume",
+      "type": "std/double"
+    },
+    {
+      "name": "deal",
+      "type": "std/double"
+    },
+    {
+      "name": "last",
+      "type": "std/double"
+    },
+    {
+      "name": "period",
+      "type": "std/int32"
+    }
+  ]
+}

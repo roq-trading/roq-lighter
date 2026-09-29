@@ -1,0 +1,118 @@
+/* Copyright (c) 2017-2026, Hans Erik Thrane */
+
+#pragma once
+
+#include <string>
+
+#include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/latency.hpp"
+#include "roq/utils/metrics/profile.hpp"
+
+#include "roq/io/context.hpp"
+
+#include "roq/io/web/uri.hpp"
+
+#include "roq/web/socket/client.hpp"
+
+#include "roq/core/json/buffer_stack.hpp"
+
+#include "roq/lighter/gateway/shared.hpp"
+
+#include "roq/lighter/protocol/json/parser.hpp"
+
+namespace roq {
+namespace lighter {
+namespace gateway {
+
+struct MarketData final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
+  struct Handler {};
+
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index);
+
+  MarketData(MarketData const &) = delete;
+
+  uint16_t stream_id() const { return stream_id_; }
+
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
+
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
+
+  void operator()(metrics::Writer &) const;
+
+  void subscribe(size_t start_from = 0);
+
+ protected:
+  // web::socket::Client::Handler
+
+  void operator()(Trace<web::socket::Connected> const &) override;
+  void operator()(Trace<web::socket::Disconnected> const &) override;
+  void operator()(Trace<web::socket::Ready> const &) override;
+  void operator()(Trace<web::socket::Close> const &) override;
+  void operator()(Trace<web::socket::Latency> const &) override;
+  void operator()(Trace<web::socket::Text> const &) override;
+  void operator()(Trace<web::socket::Binary> const &) override;
+
+  // helpers
+
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
+
+  void subscribe(std::span<Symbol const> const &symbols);
+  void subscribe(std::string_view const &method, std::span<Symbol const> const &symbols);
+  void subscribe(std::string_view const &method, std::span<Symbol const> const &symbols, size_t limit);
+
+  void send_ping(std::chrono::nanoseconds now);
+
+  void parse(std::string_view const &message);
+
+  // protocol::json::Parser::Handler
+
+  void operator()(Trace<protocol::json::Pong> const &) override;
+  // response
+  void operator()(Trace<protocol::json::Response> const &) override;
+  // public stream
+  void operator()(Trace<protocol::json::BookTickerUpdate> const &) override;
+  void operator()(Trace<protocol::json::DepthUpdate> const &) override;
+  void operator()(Trace<protocol::json::TradesUpdate> const &) override;
+  void operator()(Trace<protocol::json::MarketUpdate> const &) override;
+  void operator()(Trace<protocol::json::MarketTodayUpdate> const &) override;
+  // private stream
+
+ private:
+  [[maybe_unused]] Handler &handler_;
+  // config
+  uint16_t const stream_id_;
+  std::string const name_;
+  size_t const index_;
+  std::chrono::nanoseconds const ping_frequency_;
+  bool const spot_;
+  size_t const mbp_depth_;
+  std::string const mbp_topic_;
+  // web socket
+  std::unique_ptr<web::socket::Client> const connection_;
+  // buffers
+  core::json::BufferStack decode_buffer_;
+  // session
+  uint64_t request_id_ = {};
+  // metrics
+  struct {
+    utils::metrics::Counter disconnect;
+  } counter_;
+  struct {
+    utils::metrics::Profile parse, response, book_ticker_update, depth_update, trades_update, market_update, market_today_update;
+  } profile_;
+  struct {
+    utils::metrics::Latency ping, heartbeat;
+  } latency_;
+  // cache
+  Shared &shared_;
+  // state
+  ConnectionStatus connection_status_ = {};
+  // ping
+  std::chrono::nanoseconds next_ping_ = {};
+};
+
+}  // namespace gateway
+}  // namespace lighter
+}  // namespace roq

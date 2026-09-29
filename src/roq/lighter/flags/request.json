@@ -1,0 +1,20 @@
+{
+  "name": "roq/lighter/flags/Request",
+  "type": "flags",
+  "prefix": "request_",
+  "values": [
+    {
+      "name": "limit",
+      "type": "std/uint32",
+      "default": "10",
+      "description": "Maximum number of requests per interval"
+    },
+    {
+      "name": "limit_interval",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "1s",
+      "description": "Monitor interval"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+package:
+  name: roq-lighter
+  version: {{ GIT_DESCRIBE_TAG }}
+
+source:
+  git_url: ..
+
+build:
+  skip: true  # [not unix]
+  number: {{ ROQ_BUILD_NUMBER if ROQ_BUILD_NUMBER is defined else GIT_DESCRIBE_NUMBER }}
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - clang-format
+    - cmake
+    - coreutils
+    - git
+    - jinja2
+    - make
+    - pkg-config
+    - roq-autogen
+  host:
+    - catch2  # [osx]
+    - fmt
+    - libabseil
+    - magic_enum
+    - roq-api
+    - roq-cache
+    - roq-codec
+    - roq-core
+    - roq-fix
+    - roq-flags
+    - roq-io
+    - roq-logging
+    - roq-market
+    - roq-oss-benchmark
+    - roq-oss-catch2  # [linux]
+    - roq-oss-tomlplusplus
+    - roq-server
+    - roq-utils
+    - roq-web
+    - unordered_dense
+
+about:
+  home: https://roq-trading.com
+  doc_url: https://roq-trading.com/docs
+  dev_url: https://github.com/roq-trading
+  license: Commercial
+  license_family: PROPRIETARY
+  license_file: LICENSE
+  summary: Roq's Ligther gateway
