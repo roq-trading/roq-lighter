@@ -3,13 +3,22 @@
   "type": "enum",
   "values": [
     {
-      "name": "spot"
+      "name": "connected"
     },
     {
-      "name": "futures"
+      "name": "pong"
     },
     {
-      "name": "tradfiFutures"
+      "name": "order_book"
+    },
+    {
+      "name": "ticker"
+    },
+    {
+      "name": "trade"
+    },
+    {
+      "name": "market_stats"
     }
   ]
 }

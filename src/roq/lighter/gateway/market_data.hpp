@@ -59,8 +59,7 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void subscribe(std::span<Symbol const> const &symbols);
-  void subscribe(std::string_view const &method, std::span<Symbol const> const &symbols);
-  void subscribe(std::string_view const &method, std::span<Symbol const> const &symbols, size_t limit);
+  void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
 
   void send_ping(std::chrono::nanoseconds now);
 
@@ -68,15 +67,14 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
 
   // protocol::json::Parser::Handler
 
+  void operator()(Trace<protocol::json::Connected> const &) override;
   void operator()(Trace<protocol::json::Pong> const &) override;
-  // response
-  void operator()(Trace<protocol::json::Response> const &) override;
+  void operator()(Trace<protocol::json::Error> const &) override;
   // public stream
-  void operator()(Trace<protocol::json::BookTickerUpdate> const &) override;
-  void operator()(Trace<protocol::json::DepthUpdate> const &) override;
-  void operator()(Trace<protocol::json::TradesUpdate> const &) override;
-  void operator()(Trace<protocol::json::MarketUpdate> const &) override;
-  void operator()(Trace<protocol::json::MarketTodayUpdate> const &) override;
+  void operator()(Trace<protocol::json::OrderBook> const &) override;
+  void operator()(Trace<protocol::json::Ticker> const &) override;
+  void operator()(Trace<protocol::json::Trade> const &) override;
+  void operator()(Trace<protocol::json::MarketStats> const &) override;
   // private stream
 
  private:
@@ -93,14 +91,12 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
-  // session
-  uint64_t request_id_ = {};
   // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, response, book_ticker_update, depth_update, trades_update, market_update, market_today_update;
+    utils::metrics::Profile parse, connected, pong, error, order_book, ticker, trade, market_stats;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

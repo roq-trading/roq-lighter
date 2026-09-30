@@ -14,8 +14,8 @@ namespace gateway {
 
 struct API final {
   struct {
-    std::string_view markets;
-    std::string_view kline;
+    std::string_view asset_details;
+    std::string_view order_book_details;
   } market_data;
 
   struct {

@@ -1,0 +1,22 @@
+{
+  "name": "roq/lighter/protocol/json/MarketStats",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "std/string_view"
+    },
+    {
+      "name": "market_stats",
+      "type": "roq/lighter/protocol/json/MarketStatsMarketStats"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "type",
+      "type": "std/string_view"
+    }
+  ]
+}

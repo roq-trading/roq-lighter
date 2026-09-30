@@ -1,0 +1,25 @@
+{
+  "name": "roq/lighter/protocol/json/TickerTicker",
+  "type": "dictionary",
+  "values": [
+    {
+      "raw": "s",
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "a",
+      "name": "ask",
+      "type": "roq/lighter/protocol/json/TickerTickerLevel"
+    },
+    {
+      "raw": "b",
+      "name": "bid",
+      "type": "roq/lighter/protocol/json/TickerTickerLevel"
+    },
+    {
+      "name": "last_updated_at",
+      "type": "std/microseconds"
+    }
+  ]
+}

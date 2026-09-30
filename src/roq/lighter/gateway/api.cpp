@@ -18,8 +18,8 @@ API API::create(Settings const &settings) {
   auto api = parse_api(settings.app.api);
   return {
       .market_data{
-          .markets = "/api/markets"sv,
-          .kline = "/v5/market/kline"sv,
+          .asset_details = "/api/v1/assetDetails"sv,
+          .order_book_details = "/api/v1/orderBookDetails"sv,
       },
       .simple{
           .account_info = "/v5/account/info"sv,

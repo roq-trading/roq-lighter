@@ -12,7 +12,7 @@
 
 #include "roq/lighter/protocol/json/utils.hpp"
 
-#include "roq/lighter/protocol/json/method.hpp"
+#include "roq/lighter/protocol/json/type.hpp"
 
 using namespace std::literals;
 
@@ -24,9 +24,8 @@ namespace json {
 // === CONSTANTS ===
 
 namespace {
-constexpr auto const KEY_METHOD = "method"sv;
-constexpr auto const KEY_RESULT = "result"sv;
-constexpr auto const RESULT_PONG = "pong"sv;
+constexpr auto const KEY_TYPE = "type"sv;
+constexpr auto const KEY_ERROR = "error"sv;
 }  // namespace
 
 // === HELPERS ===
@@ -38,6 +37,18 @@ auto dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &tra
   create_trace_and_dispatch(handler, trace_info, obj, std::forward<Args>(args)...);
   return true;
 }
+
+constexpr std::string_view extract_type(std::string_view const &text) {
+  auto pos = text.find('/');
+  if (pos == std::string_view::npos) {
+    return text;
+  }
+  return text.substr(pos + 1);
+}
+
+static_assert(extract_type(""sv) == ""sv);
+static_assert(extract_type("foo"sv) == "foo"sv);
+static_assert(extract_type("foo/bar"sv) == "bar"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -45,46 +56,43 @@ auto dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &tra
 bool Parser::dispatch(
     Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool allow_unknown_event_types) {
   auto result = false;
-  auto has_result = false;
   auto helper = [&](auto &key, auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
-      case utils::hash::FNV::compute(KEY_METHOD): {
-        Method method{value};
-        switch (method) {
-          using enum Method::type_t;
+      case utils::hash::FNV::compute(KEY_TYPE): {
+        auto tmp = std::get<std::string_view>(value);
+        Type type{extract_type(tmp)};
+        switch (type) {
+          using enum Type::type_t;
           case UNDEFINED_INTERNAL:
             log::fatal("Unexpected"sv);
           case UNKNOWN_INTERNAL:
             return true;
-          case BOOK_TICKER_UPDATE:
-            result = dispatch_helper<BookTickerUpdate>(handler, message, buffer_stack, trace_info);
+          case CONNECTED:
+            result = dispatch_helper<Connected>(handler, message, buffer_stack, trace_info);
             return true;
-          case DEPTH_UPDATE:
-            result = dispatch_helper<DepthUpdate>(handler, message, buffer_stack, trace_info);
+          case PONG:
+            result = dispatch_helper<Pong>(handler, message, buffer_stack, trace_info);
             return true;
-          case TRADES_UPDATE:
-            result = dispatch_helper<TradesUpdate>(handler, message, buffer_stack, trace_info);
+          case ORDER_BOOK:
+            result = dispatch_helper<OrderBook>(handler, message, buffer_stack, trace_info);
             return true;
-          case MARKET_UPDATE:
-            result = dispatch_helper<MarketUpdate>(handler, message, buffer_stack, trace_info);
+          case TICKER:
+            result = dispatch_helper<Ticker>(handler, message, buffer_stack, trace_info);
             return true;
-          case MARKET_TODAY_UPDATE:
-            result = dispatch_helper<MarketTodayUpdate>(handler, message, buffer_stack, trace_info);
+          case TRADE:
+            result = dispatch_helper<Trade>(handler, message, buffer_stack, trace_info);
+            return true;
+          case MARKET_STATS:
+            result = dispatch_helper<MarketStats>(handler, message, buffer_stack, trace_info);
             return true;
         }
         return true;
       }
-      case utils::hash::FNV::compute(KEY_RESULT):
-        if (std::holds_alternative<std::string_view>(value) && std::get<std::string_view>(value) == RESULT_PONG) {
-          result = dispatch_helper<Pong>(handler, message, buffer_stack, trace_info);
-          return true;
-        }
-        has_result = true;
-        break;
-    }
-    if (has_result) {
-      result = dispatch_helper<Response>(handler, message, buffer_stack, trace_info);
+      case utils::hash::FNV::compute(KEY_ERROR): {
+        result = dispatch_helper<Error>(handler, message, buffer_stack, trace_info);
+        return true;
+      }
     }
     return result;
   };

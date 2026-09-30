@@ -3,10 +3,10 @@
   "type": "enum",
   "values": [
     {
-      "name": "buy"
+      "name": "trade"
     },
     {
-      "name": "sell"
+      "name": "liquidation"
     }
   ]
 }

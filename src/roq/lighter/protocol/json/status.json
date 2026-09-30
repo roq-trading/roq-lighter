@@ -1,0 +1,12 @@
+{
+  "name": "roq/lighter/protocol/json/Status",
+  "type": "enum",
+  "values": [
+    {
+      "name": "active"
+    },
+    {
+      "name": "inactive"
+    }
+  ]
+}

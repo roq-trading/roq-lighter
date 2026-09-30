@@ -1,0 +1,78 @@
+{
+  "name": "roq/lighter/protocol/json/AssetDetailsAckAssetDetailsItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "asset_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "name": "l1_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "min_transfer_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "min_withdrawal_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "margin_mode",
+      "type": "std/string_view"
+    },
+    {
+      "name": "index_price",
+      "type": "std/double"
+    },
+    {
+      "name": "price_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "l1_address",
+      "type": "std/string_view"
+    },
+    {
+      "name": "loan_to_value",
+      "type": "std/double"
+    },
+    {
+      "name": "liquidation_threshold",
+      "type": "std/double"
+    },
+    {
+      "name": "liquidation_factor",
+      "type": "std/double"
+    },
+    {
+      "name": "liquidation_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "global_supply_cap",
+      "type": "std/double"
+    },
+    {
+      "name": "user_supply_cap",
+      "type": "std/double"
+    },
+    {
+      "name": "total_supplied",
+      "type": "std/double"
+    },
+    {
+      "name": "multiplier",
+      "type": "std/double"
+    }
+  ]
+}

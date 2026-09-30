@@ -3,16 +3,8 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "error",
-      "type": "roq/lighter/protocol/json/Error"
-    },
-    {
-      "name": "result",
+      "name": "type",
       "type": "std/string_view"
-    },
-    {
-      "name": "id",
-      "type": "std/int64"
     }
   ]
 }

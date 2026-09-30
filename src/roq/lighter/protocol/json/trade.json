@@ -1,0 +1,28 @@
+{
+  "name": "roq/lighter/protocol/json/Trade",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "std/string_view"
+    },
+    {
+      "name": "liquidation_trades",
+      "type": "roq/lighter/protocol/json/TradeTradesItem",
+      "array": "std/span"
+    },
+    {
+      "name": "nonce",
+      "type": "std/int64"
+    },
+    {
+      "name": "trades",
+      "type": "roq/lighter/protocol/json/TradeTradesItem",
+      "array": "std/span"
+    },
+    {
+      "name": "type",
+      "type": "std/string_view"
+    }
+  ]
+}

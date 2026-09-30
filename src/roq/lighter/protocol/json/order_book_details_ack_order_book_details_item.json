@@ -1,0 +1,216 @@
+{
+  "name": "roq/lighter/protocol/json/OrderBookDetailsAckOrderBookDetailsItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "name": "market_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "market_type",
+      "type": "roq/lighter/protocol/json/MarketType"
+    },
+    {
+      "name": "base_asset_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "quote_asset_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "status",
+      "type": "roq/lighter/protocol/json/Status"
+    },
+    {
+      "name": "taker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "is_taker_fee_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "maker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "is_maker_fee_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "liquidation_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "min_base_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "min_quote_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "order_quote_limit",
+      "type": "std/double"
+    },
+    {
+      "name": "supported_size_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "supported_price_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "supported_quote_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "created_at",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "multiplier",
+      "type": "std/double"
+    },
+    {
+      "name": "start_timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "end_timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "outcome",
+      "type": "std/int32"
+    },
+    {
+      "name": "operator_account_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "settlement_cap",
+      "type": "std/double"
+    },
+    {
+      "name": "settlement_type",
+      "type": "std/int32"
+    },
+    {
+      "name": "settlement_price",
+      "type": "std/double"
+    },
+    {
+      "name": "default_price",
+      "type": "std/double"
+    },
+    {
+      "name": "is_frozen",
+      "type": "std/bool"
+    },
+    {
+      "name": "size_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "price_decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "quote_multiplier",
+      "type": "std/double"
+    },
+    {
+      "name": "default_initial_margin_fraction",
+      "type": "std/double"
+    },
+    {
+      "name": "min_initial_margin_fraction",
+      "type": "std/double"
+    },
+    {
+      "name": "maintenance_margin_fraction",
+      "type": "std/double"
+    },
+    {
+      "name": "closeout_margin_fraction",
+      "type": "std/double"
+    },
+    {
+      "name": "mark_price",
+      "type": "std/double"
+    },
+    {
+      "name": "index_price",
+      "type": "std/double"
+    },
+    {
+      "name": "last_trade_price",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_trades_count",
+      "type": "std/int32"
+    },
+    {
+      "name": "daily_base_token_volume",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_quote_token_volume",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_low",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_high",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_change",
+      "type": "std/double"
+    },
+    {
+      "name": "open_interest",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_chart"
+    },
+    {
+      "name": "market_config"
+    },
+    {
+      "name": "strategy_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "market_flags",
+      "type": "std/int32"
+    },
+    {
+      "name": "funding_premium_multiplier",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_clamp_small",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_clamp_big",
+      "type": "std/double"
+    },
+    {
+      "name": "base_interest_rate",
+      "type": "std/double"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "roq/lighter/protocol/json/ErrorError",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "message",
+      "type": "std/string_view"
+    }
+  ]
+}

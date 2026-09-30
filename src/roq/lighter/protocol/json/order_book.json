@@ -1,0 +1,30 @@
+{
+  "name": "roq/lighter/protocol/json/OrderBook",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "std/string_view"
+    },
+    {
+      "name": "last_updated_at",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "offset",
+      "type": "std/int64"
+    },
+    {
+      "name": "order_book",
+      "type": "roq/lighter/protocol/json/OrderBookOrderBook"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "type",
+      "type": "std/string_view"
+    }
+  ]
+}

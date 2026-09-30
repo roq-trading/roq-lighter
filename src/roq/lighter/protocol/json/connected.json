@@ -1,0 +1,14 @@
+{
+  "name": "roq/lighter/protocol/json/Connected",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "session_id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "type",
+      "type": "std/string_view"
+    }
+  ]
+}

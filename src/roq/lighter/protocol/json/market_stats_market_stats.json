@@ -1,0 +1,94 @@
+{
+  "name": "roq/lighter/protocol/json/MarketStatsMarketStats",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "name": "market_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "index_price",
+      "type": "std/double"
+    },
+    {
+      "name": "mark_price",
+      "type": "std/double"
+    },
+    {
+      "name": "mid_price",
+      "type": "std/double"
+    },
+    {
+      "name": "best_ask_price",
+      "type": "std/double"
+    },
+    {
+      "name": "best_bid_price",
+      "type": "std/double"
+    },
+    {
+      "name": "open_interest",
+      "type": "std/double"
+    },
+    {
+      "name": "open_interest_limit",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_clamp_small",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_clamp_big",
+      "type": "std/double"
+    },
+    {
+      "name": "last_trade_price",
+      "type": "std/double"
+    },
+    {
+      "name": "current_funding_rate",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_rate",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_timestamp",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_base_token_volume",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_quote_token_volume",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_low",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_high",
+      "type": "std/double"
+    },
+    {
+      "name": "daily_price_change",
+      "type": "std/double"
+    },
+    {
+      "name": "base_interest_rate",
+      "type": "std/double"
+    },
+    {
+      "name": "premium",
+      "type": "std/double"
+    }
+  ]
+}

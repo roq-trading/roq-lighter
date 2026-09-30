@@ -1,0 +1,36 @@
+{
+  "name": "roq/lighter/protocol/json/OrderBookOrderBook",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "asks",
+      "type": "roq/lighter/protocol/json/OrderBookOrderBookLevel",
+      "array": "std/span"
+    },
+    {
+      "name": "bids",
+      "type": "roq/lighter/protocol/json/OrderBookOrderBookLevel",
+      "array": "std/span"
+    },
+    {
+      "name": "offset",
+      "type": "std/int64"
+    },
+    {
+      "name": "nonce",
+      "type": "std/int64"
+    },
+    {
+      "name": "last_updated_at",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "begin_nonce",
+      "type": "std/int64"
+    }
+  ]
+}

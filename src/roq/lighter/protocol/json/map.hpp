@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "roq/lighter/protocol/json/trade_type.hpp"
-#include "roq/lighter/protocol/json/type.hpp"
+#include "roq/lighter/protocol/json/market_type.hpp"
+#include "roq/lighter/protocol/json/status.hpp"
 
 #include "roq/security_type.hpp"
 #include "roq/side.hpp"
@@ -14,16 +14,8 @@ namespace roq {
 
 template <>
 template <>
-std::optional<SecurityType> Map<lighter::protocol::json::Type>::helper() const;
-
-template <>
-template <>
-std::optional<Side> Map<lighter::protocol::json::TradeType>::helper() const;
+std::optional<SecurityType> Map<lighter::protocol::json::MarketType>::helper() const;
 
 // ===
-
-template <>
-template <>
-std::optional<lighter::protocol::json::TradeType> Map<Side>::helper() const;
 
 }  // namespace roq

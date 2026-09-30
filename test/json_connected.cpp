@@ -10,14 +10,13 @@ using namespace roq::lighter;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-using value_type = protocol::json::Pong;
+using value_type = protocol::json::Connected;
 
-TEST_CASE("simple", "[json_pong]") {
+TEST_CASE("simple", "[json_connected]") {
   auto message = R"({)"
-                 R"("type":"pong")"
+                 R"("session_id":"25754518-2da6-42a3-8b96-70d6cd103cb2",)"
+                 R"("type":"connected")"
                  R"(})"sv;
-  auto helper = [](value_type const &) {
-    //
-  };
+  auto helper = [](value_type const &obj) { CHECK(obj.session_id == "25754518-2da6-42a3-8b96-70d6cd103cb2"sv); };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);
 }

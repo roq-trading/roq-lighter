@@ -1,0 +1,15 @@
+{
+  "name": "roq/lighter/protocol/json/AssetDetailsAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "asset_details",
+      "type": "roq/lighter/protocol/json/AssetDetailsAckAssetDetailsItem",
+      "array": "std/span"
+    }
+  ]
+}

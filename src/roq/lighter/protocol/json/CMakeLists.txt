@@ -5,30 +5,34 @@ set(SOURCES encoder.cpp map.cpp parser.cpp utils.cpp)
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
-    book_ticker_update.json
-    book_ticker_update_params_item.json
-    depth_update.json
-    depth_update_params_item.json
-    depth_update_params_item_data.json
-    depth_update_params_item_data_level.json
-    error.json
-    markets_ack.json
-    markets_ack_item.json
-    market_today_update.json
-    market_today_update_params_item.json
-    market_today_update_params_item_item.json
-    market_update.json
-    market_update_params_item.json
-    market_update_params_item_item.json
-    method.json
+    order_book.json
+    order_book_order_book.json
+    order_book_order_book_level.json
+    market_stats.json
+    market_stats_market_stats.json
+    connected.json
+    asset_details_ack.json
+    asset_details_ack_asset_details_item.json
+    order_book_details_ack.json
+    order_book_details_ack_order_book_details_item.json
+    order_book_details_ack_spot_order_book_details_item.json
+    market_type.json
+    status.json
+    type.json
+    ticker.json
+    ticker_ticker.json
+    ticker_ticker_level.json
     pong.json
-    response.json
-    result.json
+    error.json
+    error_error.json
+    trade.json
+    trade_trades_item.json
+    market_kind.json
     trade_type.json
-    trades_update.json
-    trades_update_params_item.json
-    trades_update_params_item_item.json
-    type.json)
+    #
+    method.json
+    result.json
+    trade_type.json)
 
 roq_autogen_hpp(
   OUTPUT

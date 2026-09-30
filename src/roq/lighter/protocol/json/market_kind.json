@@ -1,0 +1,9 @@
+{
+  "name": "roq/lighter/protocol/json/MarketKind",
+  "type": "enum",
+  "values": [
+    {
+      "name": "perps"
+    }
+  ]
+}

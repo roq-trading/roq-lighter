@@ -1,0 +1,178 @@
+{
+  "name": "roq/lighter/protocol/json/TradeTradesItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "trade_id",
+      "type": "std/int64"
+    },
+    {
+      "name": "trade_id_str",
+      "type": "std/string_view"
+    },
+    {
+      "name": "tx_hash",
+      "type": "std/string_view"
+    },
+    {
+      "name": "type",
+      "type": "roq/lighter/protocol/json/TradeType"
+    },
+    {
+      "name": "market_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "market_kind",
+      "type": "roq/lighter/protocol/json/MarketKind"
+    },
+    {
+      "name": "size",
+      "type": "std/double"
+    },
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "usd_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "ask_id",
+      "type": "std/int64"
+    },
+    {
+      "name": "ask_id_str",
+      "type": "std/string_view"
+    },
+    {
+      "name": "bid_id",
+      "type": "std/int64"
+    },
+    {
+      "name": "bid_id_str",
+      "type": "std/string_view"
+    },
+    {
+      "name": "ask_client_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "ask_client_id_str",
+      "type": "std/string_view"
+    },
+    {
+      "name": "bid_client_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "bid_client_id_str",
+      "type": "std/string_view"
+    },
+    {
+      "name": "ask_account_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "bid_account_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "is_maker_ask",
+      "type": "std/bool"
+    },
+    {
+      "name": "block_height",
+      "type": "std/int32"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "taker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_position_size_before",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_entry_quote_before",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_initial_margin_fraction_before",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_position_sign_changed",
+      "type": "std/bool"
+    },
+    {
+      "name": "maker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "maker_position_size_before",
+      "type": "std/double"
+    },
+    {
+      "name": "maker_entry_quote_before",
+      "type": "std/double"
+    },
+    {
+      "name": "maker_initial_margin_fraction_before",
+      "type": "std/double"
+    },
+    {
+      "name": "maker_position_sign_changed",
+      "type": "std/bool"
+    },
+    {
+      "name": "transaction_time",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "integrator_maker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "integrator_maker_fee_collector_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "integrator_taker_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "integrator_taker_fee_collector_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "maker_allocated_margin_usdc_before",
+      "type": "std/double"
+    },
+    {
+      "name": "maker_allocated_margin_usdc_after",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_allocated_margin_usdc_before",
+      "type": "std/double"
+    },
+    {
+      "name": "taker_allocated_margin_usdc_after",
+      "type": "std/double"
+    },
+    {
+      "name": "ask_order_version",
+      "type": "std/int32"
+    },
+    {
+      "name": "bid_order_version",
+      "type": "std/int32"
+    }
+  ]
+}

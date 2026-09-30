@@ -9,6 +9,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/utils/container.hpp"
+
 #include "roq/core/symbols.hpp"
 #include "roq/core/timer_queue.hpp"
 
@@ -44,6 +46,8 @@ struct Shared final {
   std::vector<Trade> trades;
   std::vector<Bar> bars;
   std::vector<Fill> fills;
+
+  utils::unordered_map<int32_t, std::string> assets;
 };
 
 }  // namespace gateway

@@ -1,13 +1,13 @@
 {
-  "name": "roq/lighter/protocol/json/DepthUpdateParamsItemDataLevel",
-  "type": "by_index",
+  "name": "roq/lighter/protocol/json/OrderBookOrderBookLevel",
+  "type": "dictionary",
   "values": [
     {
       "name": "price",
       "type": "std/double"
     },
     {
-      "name": "amount",
+      "name": "size",
       "type": "std/double"
     }
   ]

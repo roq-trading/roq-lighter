@@ -27,7 +27,7 @@ auto const SUPPORTS = Mask{
     SupportType::MARKET_STATUS,
 };
 
-size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 }  // namespace
 
 // === HELPERS ===
@@ -85,8 +85,10 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .markets = create_metrics(shared.settings, name_, "markets"sv),
-          .markets_ack = create_metrics(shared.settings, name_, "markets_ack"sv),
+          .asset_details = create_metrics(shared.settings, name_, "asset_details"sv),
+          .asset_details_ack = create_metrics(shared.settings, name_, "asset_details_ack"sv),
+          .order_book_details = create_metrics(shared.settings, name_, "order_book_details"sv),
+          .order_book_details_ack = create_metrics(shared.settings, name_, "order_book_details_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -113,8 +115,10 @@ void Rest::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.markets, metrics::Type::PROFILE)
-      .write(profile_.markets_ack, metrics::Type::PROFILE)
+      .write(profile_.asset_details, metrics::Type::PROFILE)
+      .write(profile_.asset_details_ack, metrics::Type::PROFILE)
+      .write(profile_.order_book_details, metrics::Type::PROFILE)
+      .write(profile_.order_book_details_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -174,9 +178,13 @@ uint32_t Rest::download(State state) {
     case UNDEFINED:
       assert(false);
       break;
-    case GET_MARKETS:
-      (*this)(ConnectionStatus::DOWNLOADING, "get-markets"sv);
-      get_markets();
+    case GET_ASSET_DETAILS:
+      (*this)(ConnectionStatus::DOWNLOADING, "get-asset-details"sv);
+      get_asset_details();
+      return 1;
+    case GET_ORDER_BOOK_DETAILS:
+      (*this)(ConnectionStatus::DOWNLOADING, "get-order-book-details"sv);
+      get_order_book_details();
       return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -186,13 +194,13 @@ uint32_t Rest::download(State state) {
   return 0;
 }
 
-// markets
+// asset-details
 
-void Rest::get_markets() {
-  profile_.markets([&]() {
+void Rest::get_asset_details() {
+  profile_.asset_details([&]() {
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.market_data.markets,
+        .path = shared_.api.market_data.asset_details,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -203,15 +211,15 @@ void Rest::get_markets() {
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_markets_ack(event, sequence);
+      get_asset_details_ack(event, sequence);
     };
-    (*connection_)("markets"sv, request, callback);
+    (*connection_)("asset-details"sv, request, callback);
   });
 }
 
-void Rest::get_markets_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = State::GET_MARKETS;
-  profile_.markets_ack([&]() {
+void Rest::get_asset_details_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = State::GET_ASSET_DETAILS;
+  profile_.asset_details_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -220,8 +228,8 @@ void Rest::get_markets_ack(Trace<web::rest::Response> const &event, uint32_t seq
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        protocol::json::MarketsAck markets_ack{body, decode_buffer_};
-        Trace event_2{event, markets_ack};
+        protocol::json::AssetDetailsAck asset_details_ack{body, decode_buffer_};
+        Trace event_2{event, asset_details_ack};
         (*this)(event_2);
         download_.check(STATE);
       }
@@ -230,36 +238,96 @@ void Rest::get_markets_ack(Trace<web::rest::Response> const &event, uint32_t seq
   });
 }
 
-void Rest::operator()(Trace<protocol::json::MarketsAck> const &event) {
-  auto &[trace_info, markets_ack] = event;
-  log::info<4>("markets_ack={}"sv, markets_ack);
+void Rest::operator()(Trace<protocol::json::AssetDetailsAck> const &event) {
+  auto &[trace_info, asset_details_ack] = event;
+  log::info<4>("asset_details_ack={}"sv, asset_details_ack);
+  for (auto &item : asset_details_ack.asset_details) {
+    shared_.assets[item.asset_id] = std::string{item.symbol};
+  }
+}
+
+// order-book-details
+
+void Rest::get_order_book_details() {
+  profile_.order_book_details([&]() {
+    auto request = web::rest::Request{
+        .method = web::http::Method::GET,
+        .path = shared_.api.market_data.order_book_details,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = {},
+        .headers = {},
+        .body = {},
+        .quality_of_service = {},
+    };
+    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_order_book_details_ack(event, sequence);
+    };
+    (*connection_)("order-book-details"sv, request, callback);
+  });
+}
+
+void Rest::get_order_book_details_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = State::GET_ORDER_BOOK_DETAILS;
+  profile_.order_book_details_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      download_.retry(STATE);
+    };
+    auto handle_success = [&](auto &body) {
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        protocol::json::OrderBookDetailsAck order_book_details_ack{body, decode_buffer_};
+        Trace event_2{event, order_book_details_ack};
+        (*this)(event_2);
+        download_.check(STATE);
+      }
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+void Rest::operator()(Trace<protocol::json::OrderBookDetailsAck> const &event) {
+  auto &[trace_info, order_book_details_ack] = event;
+  log::info<4>("order_book_details_ack={}"sv, order_book_details_ack);
+  auto get_asset_helper = [&](auto asset_id) -> std::string_view {
+    auto iter = shared_.assets.find(asset_id);
+    return iter != std::end(shared_.assets) ? (*iter).second : std::string_view{};
+  };
   std::vector<Symbol> symbols;
-  symbols.reserve(std::size(markets_ack.data));  // alloc
+  symbols.reserve(std::size(order_book_details_ack.spot_order_book_details) + std::size(order_book_details_ack.order_book_details));  // alloc
   size_t counter = 0;
-  for (auto &item : markets_ack.data) {
+  auto helper = [&](auto &item) {
     log::info<2>("item={}"sv, item);
     auto discard = shared_.dispatcher.discard_symbol(item.symbol);
+    auto base_currency = get_asset_helper(item.base_asset_id);
+    auto quote_currency = get_asset_helper(item.quote_asset_id);
+    auto tick_size = std::pow(10.0, -item.supported_price_decimals);           // ???
+    auto trade_vol_step_size = std::pow(10.0, -item.supported_size_decimals);  // ???
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
         .symbol = item.symbol,
         .description = {},
-        .security_type = {},
-        .external_security_id = utils::safe_cast(item.market_index),
+        .security_type = map(item.market_type),
+        .external_security_id = utils::safe_cast(item.market_id),
         .market_segment = {},
         .cfi_code = {},
-        .base_currency = {},
-        .quote_currency = {},
+        .base_currency = base_currency,
+        .quote_currency = quote_currency,
         .settlement_currency = {},
         .margin_currency = {},
         .commission_currency = {},
-        .tick_size = NaN,
+        .tick_size = tick_size,
         .tick_size_steps = {},
         .multiplier = NaN,
         .min_notional = NaN,
-        .min_trade_vol = NaN,
+        .min_trade_vol = item.min_quote_amount,  // ???
         .max_trade_vol = NaN,
-        .trade_vol_step_size = NaN,
+        .trade_vol_step_size = trade_vol_step_size,
         .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
@@ -277,12 +345,18 @@ void Rest::operator()(Trace<protocol::json::MarketsAck> const &event) {
     create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
     if (discard) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
-      continue;
+      return;
     }
     if (shared_.all_symbols.emplace(item.symbol).second) {  // only include new
       symbols.emplace_back(item.symbol);
     }
     ++counter;
+  };
+  for (auto &item : order_book_details_ack.spot_order_book_details) {
+    helper(item);
+  }
+  for (auto &item : order_book_details_ack.order_book_details) {
+    helper(item);
   }
   if (!std::empty(symbols)) {
     auto symbols_update = SymbolsUpdate{
@@ -291,7 +365,7 @@ void Rest::operator()(Trace<protocol::json::MarketsAck> const &event) {
     handler_(symbols_update);
   }
   if (counter > 0) {
-    log::info("Symbols {} / {}"sv, counter, std::size(markets_ack.data));
+    log::info("Symbols {} / {}"sv, counter, std::size(order_book_details_ack.order_book_details));
   }
 }
 

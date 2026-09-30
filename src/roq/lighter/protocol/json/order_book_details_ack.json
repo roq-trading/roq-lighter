@@ -1,0 +1,20 @@
+{
+  "name": "roq/lighter/protocol/json/OrderBookDetailsAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "order_book_details",
+      "type": "roq/lighter/protocol/json/OrderBookDetailsAckOrderBookDetailsItem",
+      "array": "std/span"
+    },
+    {
+      "name": "spot_order_book_details",
+      "type": "roq/lighter/protocol/json/OrderBookDetailsAckSpotOrderBookDetailsItem",
+      "array": "std/span"
+    }
+  ]
+}

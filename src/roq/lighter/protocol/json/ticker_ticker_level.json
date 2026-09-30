@@ -1,0 +1,14 @@
+{
+  "name": "roq/lighter/protocol/json/TickerTickerLevel",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "size",
+      "type": "std/double"
+    }
+  ]
+}
