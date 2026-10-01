@@ -5,6 +5,7 @@
 #include "roq/mask.hpp"
 
 #include "roq/utils/safe_cast.hpp"
+#include "roq/utils/update.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
 
@@ -70,10 +71,6 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
-
-auto create_rate_limiter(auto &settings) {
-  return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -93,8 +90,7 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }},
-      rate_limiter{create_rate_limiter(shared.settings)} {
+      shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void Rest::operator()(Event<Start> const &) {
@@ -123,26 +119,27 @@ void Rest::operator()(metrics::Writer &writer) const {
       .write(latency_.ping, metrics::Type::LATENCY);
 }
 
-void Rest::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::HTTP,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+void Rest::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  if (utils::update(connection_status_, connection_status)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id_,
+        .account = {},
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::HTTP,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status_,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+        .proxy = (*connection_).get_proxy(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 void Rest::operator()(Trace<web::rest::Connected> const &) {
@@ -153,9 +150,11 @@ void Rest::operator()(Trace<web::rest::Connected> const &) {
   }
 }
 
-void Rest::operator()(Trace<web::rest::Disconnected> const &) {
+void Rest::operator()(Trace<web::rest::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  Trace event_2{trace_info, ConnectionStatus::DISCONNECTED};
+  (*this)(event_2);
   if (!download_.downloading()) {
     download_.reset();
   }
@@ -173,19 +172,24 @@ void Rest::operator()(Trace<web::rest::Latency> const &event) {
 }
 
 uint32_t Rest::download(State state) {
+  TraceInfo trace_info;  // XXX FIXME TODO should pass through
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
-    case GET_ASSET_DETAILS:
-      (*this)(ConnectionStatus::DOWNLOADING, "get-asset-details"sv);
+    case GET_ASSET_DETAILS: {
+      Trace event_2{trace_info, ConnectionStatus::DOWNLOADING};
+      (*this)(event_2, "get-asset-details"sv);
       get_asset_details();
       return 1;
-    case GET_ORDER_BOOK_DETAILS:
-      (*this)(ConnectionStatus::DOWNLOADING, "get-order-book-details"sv);
+    }
+    case GET_ORDER_BOOK_DETAILS: {
+      Trace event_2{trace_info, ConnectionStatus::DOWNLOADING};
+      (*this)(event_2, "get-order-book-details"sv);
       get_order_book_details();
       return 1;
+    }
     case DONE:
       (*this)(ConnectionStatus::READY);
       return 0;
@@ -353,6 +357,7 @@ void Rest::operator()(Trace<protocol::json::OrderBookDetailsAck> const &event) {
   for (auto &item : order_book_details_ack.spot_order_book_details) {
     helper(item);
   }
+  // XXX FIXME TODO not sure if we should create spot as well -- perhaps we can't subscribe market data ???
   for (auto &item : order_book_details_ack.order_book_details) {
     helper(item);
   }

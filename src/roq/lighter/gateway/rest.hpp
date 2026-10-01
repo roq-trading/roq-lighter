@@ -16,8 +16,6 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/limit/rate_limiter.hpp"
-
 #include "roq/lighter/gateway/shared.hpp"
 
 #include "roq/lighter/protocol/json/asset_details_ack.hpp"
@@ -55,6 +53,7 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Trace<web::rest::Disconnected> const &) override;
   void operator()(Trace<web::rest::Latency> const &) override;
 
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {});
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   enum class State {
@@ -109,8 +108,6 @@ struct Rest final : public web::rest::Client::Handler {
   // state
   ConnectionStatus connection_status_ = {};
   core::Download<State> download_;
-  // ...
-  core::limit::RateLimiter rate_limiter;
 };
 
 }  // namespace gateway

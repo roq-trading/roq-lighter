@@ -56,7 +56,7 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
 
   // helpers
 
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {});
 
   void subscribe(std::span<Symbol const> const &symbols);
   void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
