@@ -49,13 +49,13 @@ Supports
         - |check-mark|
         -
       * - :cpp:enumerator:`Futures <roq::SecurityType::FUTURES>`
-        - |check-mark|
+        - |cross-mark|
         -
       * - :cpp:enumerator:`Swap <roq::SecurityType::SWAP>`
         - |check-mark|
         -
       * - :cpp:enumerator:`Option <roq::SecurityType::OPTION>`
-        - |check-mark|
+        - |cross-mark|
         -
 
   .. grid-item-card::  Market Data
@@ -68,7 +68,7 @@ Supports
         - |check-mark|
         -
       * - :cpp:class:`MarketStatus <roq::MarketStatus>`
-        - |check-mark|
+        - |cross-mark|
         -
       * - :cpp:class:`TopOfBook <roq::TopOfBook>`
         - |check-mark|
@@ -86,7 +86,7 @@ Supports
         - |check-mark|
         -
       * - :cpp:class:`TimeSeries <roq::TimeSeriesUpdate>`
-        - |check-mark|
+        - |cross-mark|
         -
 
   .. grid-item-card::  Orders & Quotes
@@ -195,6 +195,15 @@ Environments
       $ --flagfile $CONDA_PREFIX/share/roq-lighter/flags/prod/flags.cfg
 
    .. include:: flags/prod/flags.cfg
+     :code: shell
+
+.. tab:: Test
+
+   .. code-block:: shell
+
+      $ --flagfile $CONDA_PREFIX/share/roq-lighter/flags/test/flags.cfg
+
+   .. include:: flags/test/flags.cfg
      :code: shell
 
 

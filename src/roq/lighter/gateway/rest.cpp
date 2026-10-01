@@ -293,18 +293,16 @@ void Rest::get_order_book_details_ack(Trace<web::rest::Response> const &event, u
 void Rest::operator()(Trace<protocol::json::OrderBookDetailsAck> const &event) {
   auto &[trace_info, order_book_details_ack] = event;
   log::info<4>("order_book_details_ack={}"sv, order_book_details_ack);
-  auto get_asset_helper = [&](auto asset_id) -> std::string_view {
-    auto iter = shared_.assets.find(asset_id);
-    return iter != std::end(shared_.assets) ? (*iter).second : std::string_view{};
-  };
   std::vector<Symbol> symbols;
   symbols.reserve(std::size(order_book_details_ack.spot_order_book_details) + std::size(order_book_details_ack.order_book_details));  // alloc
   size_t counter = 0;
   auto helper = [&](auto &item) {
     log::info<2>("item={}"sv, item);
     auto discard = shared_.dispatcher.discard_symbol(item.symbol);
-    auto base_currency = get_asset_helper(item.base_asset_id);
-    auto quote_currency = get_asset_helper(item.quote_asset_id);
+    shared_.markets[item.market_id] = std::string{item.symbol};
+    shared_.reverse_markets[item.symbol] = item.market_id;
+    auto base_currency = shared_.get_symbol_from_asset_id(item.base_asset_id);
+    auto quote_currency = shared_.get_symbol_from_asset_id(item.quote_asset_id);
     auto tick_size = std::pow(10.0, -item.supported_price_decimals);           // ???
     auto trade_vol_step_size = std::pow(10.0, -item.supported_size_decimals);  // ???
     auto reference_data = ReferenceData{

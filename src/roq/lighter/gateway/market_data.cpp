@@ -9,6 +9,10 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/charconv/from_chars.hpp"
+
+#include "roq/utils/hash/fnv.hpp"
+
 #include "roq/utils/exceptions/unhandled.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
@@ -27,15 +31,12 @@ namespace {
 auto const NAME = "md"sv;
 
 auto const SUPPORTS = Mask{
-    SupportType::MARKET_STATUS,
+    // SupportType::MARKET_STATUS,
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
 };
-
-size_t const DEPTH_25 = 25;
-size_t const DEPTH_50 = 50;
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
 }  // namespace
@@ -72,34 +73,59 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
   return web::socket::Client::create(handler, context, config, shared.throttle, []() { return std::string(); });
 }
 
-auto is_spot(auto api) {
-  return api == tools::API::SPOT;
-}
+// channel => market_id
 
-auto get_mbp_depth(auto &settings, auto api) -> size_t {
-  auto result = settings.ws.mbp_depth;
-  if (!result) {
-    switch (api) {
-      using enum tools::API;
-      case UNDEFINED:
-        break;
-      case SPOT:
-        return DEPTH_50;
-      case LINEAR:
-        return DEPTH_50;
-      case INVERSE:
-        return DEPTH_50;
-      case OPTION:
-        return DEPTH_25;
-    }
-    log::fatal("Unexpected"sv);
+constexpr auto extract_market_id(std::string_view const &channel) -> std::string_view {
+  auto pos = channel.find(':');
+  if (pos == std::string_view::npos) {
+    return {};
   }
-  return result;
+  return channel.substr(pos + 1);
 }
 
-auto create_mbp_topic(size_t depth) {
-  return fmt::format("orderbook.{}"sv, depth);
+static_assert(extract_market_id(""sv) == ""sv);
+static_assert(extract_market_id("order_book:1"sv) == "1"sv);
+
+auto parse_market_id(std::string_view const &channel) -> int32_t {
+  auto value = extract_market_id(channel);
+  if (!std::empty(value)) {
+    return utils::charconv::from_string_relaxed<int32_t>(value);  // note! not constexpr
+  }
+  return -1;
 }
+
+// static_assert(parse_market_id(""sv) == -1);
+// static_assert(parse_market_id("order_book:1"sv) == 1);
+
+// type => update_type
+
+constexpr auto extract_update_type(std::string_view const &type) -> std::string_view {
+  auto pos = type.find('/');
+  if (pos == std::string_view::npos) {
+    return {};
+  }
+  return type.substr(0, pos);
+}
+
+static_assert(extract_update_type(""sv) == ""sv);
+static_assert(extract_update_type("subscribed/ticker"sv) == "subscribed"sv);
+static_assert(extract_update_type("update/ticker"sv) == "update"sv);
+
+constexpr auto parse_update_type(std::string_view const &type) -> UpdateType {
+  auto value = extract_update_type(type);
+  auto key = utils::hash::FNV::compute(value);
+  switch (key) {
+    case utils::hash::FNV::compute("subscribed"sv):
+      return UpdateType::SNAPSHOT;
+    case utils::hash::FNV::compute("update"sv):
+      return UpdateType::INCREMENTAL;
+  }
+  return {};
+}
+
+static_assert(parse_update_type(""sv) == UpdateType::UNDEFINED);
+static_assert(parse_update_type("subscribed/ticker"sv) == UpdateType::SNAPSHOT);
+static_assert(parse_update_type("update/ticker"sv) == UpdateType::INCREMENTAL);
 
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
@@ -110,7 +136,6 @@ struct create_metrics final : public utils::metrics::Factory {
 
 MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, ping_frequency_{shared.settings.ws.ping_freq},
-      spot_{is_spot(shared.api.api)}, mbp_depth_{get_mbp_depth(shared.settings, shared.api.api)}, mbp_topic_{create_mbp_topic(mbp_depth_)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -243,13 +268,17 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
 void MarketData::subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
   for (auto &item : symbols) {
+    auto market_id = shared_.get_market_id_from_symbol(item);
+    if (market_id < 0) {
+      log::fatal("Unexpected: internal error"sv);
+    }
     auto message = fmt::format(
         R"({{)"
         R"("type":"subscribe",)"
-        R"("channel":"{}/1")"
+        R"("channel":"{}/{}")"
         R"(}})"sv,
-        channel);
-    log::warn("DEBUG {}"sv, message);
+        channel,
+        market_id);
     (*connection_).send_text(message);
   }
 }
@@ -265,7 +294,6 @@ void MarketData::send_ping(std::chrono::nanoseconds now) {
 }
 
 void MarketData::parse(std::string_view const &message) {
-  // log::warn(R"(DEBUG message="{}")"sv, message);
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
@@ -284,7 +312,6 @@ void MarketData::operator()(Trace<protocol::json::Connected> const &event) {
   profile_.connected([&]() {
     auto &[trace_info, connected] = event;
     log::info<3>("connected={}"sv, connected);
-    log::warn("DEBUG connected={}"sv, connected);
     (*connection_).touch(trace_info.source_receive_time);
   });
 }
@@ -293,7 +320,6 @@ void MarketData::operator()(Trace<protocol::json::Pong> const &event) {
   profile_.pong([&]() {
     auto &[trace_info, pong] = event;
     log::info<3>("pong={}"sv, pong);
-    log::warn("DEBUG pong={}"sv, pong);
     (*connection_).touch(trace_info.source_receive_time);
   });
 }
@@ -307,31 +333,54 @@ void MarketData::operator()(Trace<protocol::json::Error> const &event) {
 }
 
 void MarketData::operator()(Trace<protocol::json::OrderBook> const &event) {
-  profile_.trade([&]() {
+  profile_.order_book([&]() {
     auto &[trace_info, order_book] = event;
     log::info<3>("order_book={}"sv, order_book);
-    log::warn("DEBUG order_book={}"sv, order_book);
     (*connection_).touch(trace_info.source_receive_time);
-    /*
-    for (auto &item : order_book.params) {
-      auto top_of_book = TopOfBook{
-          .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
-          .symbol = item.market,
-          .layer{
-              .bid_price = item.best_bid_price,
-              .bid_quantity = item.best_bid_amount,
-              .ask_price = item.best_ask_price,
-              .ask_quantity = item.best_ask_amount,
-          },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = item.transaction_time,
-          .exchange_sequence = utils::safe_cast(item.update_id),
-          .sending_time_utc = item.message_time,
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
+    auto market_id = parse_market_id(order_book.channel);
+    if (market_id < 0) [[unlikely]] {
+      log::fatal("Unexpected"sv);
     }
-    */
+    auto symbol = shared_.get_symbol_from_market_id(market_id);
+    auto update_type = parse_update_type(order_book.type);
+    auto emplace_back = [](auto &result, auto &item) {
+      auto mbp_update = MBPUpdate{
+          .price = item.price,
+          .quantity = item.size,
+          .implied_quantity = NaN,
+          .number_of_orders = {},
+          .update_action = {},
+          .price_level = {},
+      };
+      result.emplace_back(std::move(mbp_update));
+    };
+    shared_.bids.clear();
+    shared_.asks.clear();
+    for (auto &item : order_book.order_book.bids) {
+      emplace_back(shared_.bids, item);
+    }
+    for (auto &item : order_book.order_book.asks) {
+      emplace_back(shared_.asks, item);
+    }
+    auto market_by_price_update = MarketByPriceUpdate{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = symbol,
+        .bids = shared_.bids,
+        .asks = shared_.asks,
+        .update_type = update_type,
+        .exchange_time_utc = order_book.order_book.last_updated_at,
+        .exchange_sequence = utils::safe_cast(order_book.order_book.nonce),
+        .sending_time_utc = order_book.timestamp,
+        .price_precision = {},
+        .quantity_precision = {},
+        .checksum = {},
+    };
+    try {
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, true, shared_.final_bids, shared_.final_asks);
+    } catch (BadState &) {
+      // resubscribe(symbol);
+    }
   });
 }
 
@@ -339,86 +388,123 @@ void MarketData::operator()(Trace<protocol::json::Ticker> const &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
-    log::warn("DEBUG ticker={}"sv, ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    /*
-    for (auto &item : ticker.params) {
-      auto top_of_book = TopOfBook{
-          .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
-          .symbol = item.market,
-          .layer{
-              .bid_price = item.best_bid_price,
-              .bid_quantity = item.best_bid_amount,
-              .ask_price = item.best_ask_price,
-              .ask_quantity = item.best_ask_amount,
-          },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = item.transaction_time,
-          .exchange_sequence = utils::safe_cast(item.update_id),
-          .sending_time_utc = item.message_time,
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
-    }
-    */
+    auto update_type = parse_update_type(ticker.type);
+    auto top_of_book = TopOfBook{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = ticker.ticker.symbol,
+        .layer{
+            .bid_price = ticker.ticker.bid.price,
+            .bid_quantity = ticker.ticker.bid.size,
+            .ask_price = ticker.ticker.ask.price,
+            .ask_quantity = ticker.ticker.ask.size,
+        },
+        .update_type = update_type,
+        .exchange_time_utc = ticker.last_updated_at,
+        .exchange_sequence = utils::safe_cast(ticker.nonce),  // ???
+        .sending_time_utc = ticker.timestamp,
+    };
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
   });
 }
 
 void MarketData::operator()(Trace<protocol::json::Trade> const &event) {
-  profile_.market_stats([&]() {
+  profile_.trade([&]() {
     auto &[trace_info, trade] = event;
     log::info<3>("trade={}"sv, trade);
-    log::warn("DEBUG trade={}"sv, trade);
     (*connection_).touch(trace_info.source_receive_time);
-    /*
-    for (auto &item : trade.params) {
-      auto top_of_book = TopOfBook{
+    auto update_type = parse_update_type(trade.type);
+    if (update_type != UpdateType::INCREMENTAL) {
+      return;
+    }
+    shared_.trades.clear();
+    uint32_t market_id = {};
+    std::chrono::nanoseconds transaction_time = {};
+    for (auto &item : trade.trades) {
+      auto side = [&]() {  // note! we need taker's side
+        if (item.is_maker_ask) {
+          return Side::BUY;
+        }
+        return Side::SELL;
+      }();
+      auto trade_2 = Trade{
+          .side = side,
+          .price = item.price,
+          .quantity = item.size,
+          .trade_id = item.trade_id_str,
+          .taker_order_id = {},
+          .maker_order_id = {},
+      };
+      shared_.trades.emplace_back(std::move(trade_2));
+      utils::update_if_not_empty(market_id, item.market_id);
+      utils::update_max(transaction_time, item.transaction_time);
+    }
+    auto symbol = shared_.get_symbol_from_market_id(market_id);
+    if (!std::empty(symbol) && !std::empty(shared_.trades)) {
+      auto trade_summary = TradeSummary{
           .stream_id = stream_id_,
           .exchange = shared_.settings.exchange,
-          .symbol = item.market,
-          .layer{
-              .bid_price = item.best_bid_price,
-              .bid_quantity = item.best_bid_amount,
-              .ask_price = item.best_ask_price,
-              .ask_quantity = item.best_ask_amount,
-          },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = item.transaction_time,
-          .exchange_sequence = utils::safe_cast(item.update_id),
-          .sending_time_utc = item.message_time,
+          .symbol = symbol,
+          .trades = shared_.trades,
+          .exchange_time_utc = transaction_time,
+          .exchange_sequence = utils::safe_cast(trade.nonce),
+          .sending_time_utc = {},
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_summary, true);
     }
-    */
   });
 }
 
 void MarketData::operator()(Trace<protocol::json::MarketStats> const &event) {
-  profile_.trade([&]() {
+  profile_.market_stats([&]() {
     auto &[trace_info, market_stats] = event;
     log::info<3>("market_stats={}"sv, market_stats);
-    log::warn("DEBUG market_stats={}"sv, market_stats);
     (*connection_).touch(trace_info.source_receive_time);
-    /*
-    for (auto &item : market_stats.params) {
-      auto top_of_book = TopOfBook{
-          .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
-          .symbol = item.market,
-          .layer{
-              .bid_price = item.best_bid_price,
-              .bid_quantity = item.best_bid_amount,
-              .ask_price = item.best_ask_price,
-              .ask_quantity = item.best_ask_amount,
-          },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = item.transaction_time,
-          .exchange_sequence = utils::safe_cast(item.update_id),
-          .sending_time_utc = item.message_time,
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
-    }
-    */
+    auto update_type = parse_update_type(market_stats.type);
+    std::array<Statistics, 5> statistics{{
+        {
+            .type = StatisticsType::HIGHEST_TRADED_PRICE,
+            .value = market_stats.market_stats.daily_price_high,
+            .begin_time_utc = {},
+            .end_time_utc = {},
+        },
+        {
+            .type = StatisticsType::LOWEST_TRADED_PRICE,
+            .value = market_stats.market_stats.daily_price_low,
+            .begin_time_utc = {},
+            .end_time_utc = {},
+        },
+        {
+            .type = StatisticsType::OPEN_INTEREST,
+            .value = market_stats.market_stats.open_interest,
+            .begin_time_utc = {},
+            .end_time_utc = {},
+        },
+        {
+            .type = StatisticsType::FUNDING_RATE,
+            .value = market_stats.market_stats.funding_rate,
+            .begin_time_utc = {},
+            .end_time_utc = {},
+        },
+        {
+            .type = StatisticsType::FUNDING_RATE_PREDICTION,
+            .value = market_stats.market_stats.current_funding_rate,
+            .begin_time_utc = {},
+            .end_time_utc = {},
+        },
+    }};
+    auto statistics_update = StatisticsUpdate{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = market_stats.market_stats.symbol,
+        .statistics = statistics,
+        .update_type = update_type,
+        .exchange_time_utc = {},
+        .exchange_sequence = {},
+        .sending_time_utc = market_stats.timestamp,
+    };
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
   });
 }
 

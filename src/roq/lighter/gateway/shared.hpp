@@ -48,6 +48,25 @@ struct Shared final {
   std::vector<Fill> fills;
 
   utils::unordered_map<int32_t, std::string> assets;
+
+  std::string_view get_symbol_from_asset_id(int32_t asset_id) const {
+    auto iter = assets.find(asset_id);
+    return iter != std::end(assets) ? (*iter).second : std::string_view{};
+  }
+
+  utils::unordered_map<int32_t, std::string> markets;
+
+  std::string_view get_symbol_from_market_id(int32_t market_id) const {
+    auto iter = markets.find(market_id);
+    return iter != std::end(markets) ? (*iter).second : std::string_view{};
+  }
+
+  utils::unordered_map<std::string, int32_t> reverse_markets;
+
+  int32_t get_market_id_from_symbol(std::string_view const &symbol) {
+    auto iter = reverse_markets.find(symbol);
+    return iter != std::end(reverse_markets) ? (*iter).second : -1;
+  }
 };
 
 }  // namespace gateway

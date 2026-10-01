@@ -84,9 +84,6 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   std::string const name_;
   size_t const index_;
   std::chrono::nanoseconds const ping_frequency_;
-  bool const spot_;
-  size_t const mbp_depth_;
-  std::string const mbp_topic_;
   // web socket
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers
