@@ -434,6 +434,8 @@ void MarketData::operator()(Trace<protocol::json::Trade> const &event) {
         return Side::SELL;
       }();
       auto trade_2 = Trade{
+          .trade_conditions = {},
+          .trade_type = {},
           .side = side,
           .price = item.price,
           .quantity = item.size,
