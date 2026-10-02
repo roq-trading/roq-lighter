@@ -54,7 +54,6 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Trace<web::rest::Latency> const &) override;
 
   void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {});
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   enum class State {
     UNDEFINED = 0,

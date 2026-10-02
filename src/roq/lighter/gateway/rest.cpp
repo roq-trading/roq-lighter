@@ -190,9 +190,12 @@ uint32_t Rest::download(State state) {
       get_order_book_details();
       return 1;
     }
-    case DONE:
-      (*this)(ConnectionStatus::READY);
+    case DONE: {
+      TraceInfo trace_info;
+      Trace event{trace_info, ConnectionStatus::READY};
+      (*this)(event);
       return 0;
+    }
   }
   assert(false);
   return 0;
