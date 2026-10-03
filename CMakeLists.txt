@@ -48,6 +48,8 @@ find_package(unordered_dense REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 
+pkg_check_modules(LIBLIGHTER_SIGNER REQUIRED liblighter-signer)
+
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(CTest)
 endif()

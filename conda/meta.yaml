@@ -36,6 +36,7 @@ requirements:
     - roq-market
     - roq-oss-benchmark
     - roq-oss-catch2  # [linux]
+    - roq-oss-lighter-signer
     - roq-oss-tomlplusplus
     - roq-server
     - roq-utils
