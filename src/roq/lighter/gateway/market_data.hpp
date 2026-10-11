@@ -84,7 +84,7 @@ struct MarketData final : public Base<MarketData>,
 
   void send_ping(std::chrono::nanoseconds now);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;

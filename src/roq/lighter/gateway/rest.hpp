@@ -19,6 +19,7 @@
 #include "roq/server/stream.hpp"
 
 #include "roq/lighter/gateway/shared.hpp"
+#include "roq/lighter/gateway/symbols_update.hpp"
 
 #include "roq/lighter/protocol/json/asset_details_ack.hpp"
 #include "roq/lighter/protocol/json/order_book_details_ack.hpp"
@@ -28,12 +29,8 @@ namespace lighter {
 namespace gateway {
 
 struct Rest final : public Base<Rest>, public server::Stream, public web::rest::Client::Handler {
-  struct SymbolsUpdate final {
-    std::span<Symbol const> symbols;
-  };
-
   struct Handler {
-    virtual void operator()(SymbolsUpdate &) = 0;
+    virtual void operator()(Trace<SymbolsUpdate> const &) = 0;
   };
 
   Rest(Handler &, io::Context &context, uint16_t stream_id, Shared &);
