@@ -48,9 +48,8 @@ std::string Account::create_signature(std::chrono::milliseconds expires_utc) {
   return crypto_.create_signature_v2(expires_utc);
 }
 
-std::string Account::create_headers(std::string_view const &path, std::string_view const &query, std::string_view const &body) {
-  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-  return crypto_.create_headers_v2(path, query, body, now_utc);
+std::string Account::create_headers(TraceInfo const &trace_info, std::string_view const &path, std::string_view const &query, std::string_view const &body) {
+  return crypto_.create_headers_v2(path, query, body, utils::safe_cast(trace_info.origin_create_time_utc));
 }
 
 }  // namespace gateway

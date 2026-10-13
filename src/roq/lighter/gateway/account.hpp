@@ -5,8 +5,6 @@
 #include <string>
 #include <string_view>
 
-#include "roq/core/timer_queue.hpp"
-
 #include "roq/core/limit/queue.hpp"
 #include "roq/core/limit/rate_limiter.hpp"
 
@@ -27,7 +25,7 @@ struct Account final {
   std::string_view get_key() const { return crypto_.key; }
 
   std::string create_signature(std::chrono::milliseconds expires_utc);
-  std::string create_headers(std::string_view const &path, std::string_view const &query, std::string_view const &body);
+  std::string create_headers(TraceInfo const &, std::string_view const &path, std::string_view const &query, std::string_view const &body);
 
   std::string const name;
 
