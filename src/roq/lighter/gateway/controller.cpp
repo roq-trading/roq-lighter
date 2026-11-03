@@ -32,7 +32,7 @@ R create_accounts(auto &settings, auto &config) {
   result_type result;
   for (auto &[_, account] : config.accounts) {
     auto obj = std::make_unique<Account>(settings, config, account.name);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+    result.try_emplace(account.name, std::move(obj));
   }
   return result;
 }
@@ -177,10 +177,10 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
 void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) {
   while (std::size(market_data_) < size) {
     log::info("Create market-data (user-stream)"sv);
-    auto market_data = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
+    auto obj = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
     Start start;
-    create_trace_and_dispatch(*market_data, trace_info, start);
-    market_data_.emplace_back(std::move(market_data));
+    create_trace_and_dispatch(*obj, trace_info, start);
+    market_data_.emplace_back(std::move(obj));
   }
 }
 

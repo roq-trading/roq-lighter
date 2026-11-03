@@ -155,6 +155,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       shared_{shared} {
+  assert(ping_frequency_.count() > 0);
 }
 
 // server::Stream
@@ -169,9 +170,13 @@ void MarketData::operator()(Trace<Stop> const &) {
 
 void MarketData::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if (ready() && next_ping_ < timer.now) {
-    send_ping(timer.now);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      if (next_ping_ < timer.now) {
+        next_ping_ = trace_info.origin_create_time + ping_frequency_;
+        send_ping();
+      }
+    }
   }
 }
 
@@ -500,9 +505,7 @@ void MarketData::subscribe(std::string_view const &channel, std::span<Symbol con
   }
 }
 
-void MarketData::send_ping(std::chrono::nanoseconds now) {
-  assert(ping_frequency_.count() > 0);
-  next_ping_ = now + ping_frequency_;
+void MarketData::send_ping() {
   auto message = fmt::format(
       R"({{)"
       R"("type":"ping")"
