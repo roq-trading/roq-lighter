@@ -170,9 +170,9 @@ void MarketData::operator()(Trace<Stop> const &) {
 
 void MarketData::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
+  if ((*connection_).refresh(trace_info)) {
     if (ready()) {
-      if (next_ping_ < timer.now) {
+      if (next_ping_ < trace_info.origin_create_time) {
         next_ping_ = trace_info.origin_create_time + ping_frequency_;
         send_ping();
       }
