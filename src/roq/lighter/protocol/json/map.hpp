@@ -14,6 +14,10 @@ namespace roq {
 
 template <>
 template <>
+std::optional<Error> Map<int32_t>::helper() const;
+
+template <>
+template <>
 std::optional<SecurityType> Map<lighter::protocol::json::MarketType>::helper() const;
 
 // ===
