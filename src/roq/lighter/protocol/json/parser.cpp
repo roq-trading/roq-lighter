@@ -54,7 +54,7 @@ static_assert(extract_type("foo/bar"sv) == "bar"sv);
 // === IMPLEMENTATION ===
 
 bool Parser::dispatch(
-    Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool allow_unknown_event_types) {
+    Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool disable_strict_parsing) {
   auto result = false;
   auto helper = [&](auto &key, auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
@@ -97,7 +97,7 @@ bool Parser::dispatch(
     return result;
   };
   core::json::Parser::dispatch<core::json::Object>(helper, message);
-  if (result || allow_unknown_event_types) {
+  if (result || disable_strict_parsing) {
     return result;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);

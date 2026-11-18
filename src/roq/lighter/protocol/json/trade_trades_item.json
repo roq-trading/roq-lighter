@@ -173,6 +173,10 @@
     {
       "name": "bid_order_version",
       "type": "std/int32"
+    },
+    {
+      "name": "market_symbol",
+      "type": "std/string_view"
     }
   ]
 }

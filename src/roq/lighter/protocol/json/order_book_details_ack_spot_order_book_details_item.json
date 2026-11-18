@@ -156,6 +156,14 @@
     },
     {
       "name": "daily_chart"
+    },
+    {
+      "name": "fee_collector_account_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "market_deployer",
+      "type": "std/string_view"
     }
   ]
 }

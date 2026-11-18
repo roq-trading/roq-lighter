@@ -89,6 +89,10 @@
     {
       "name": "premium",
       "type": "std/double"
+    },
+    {
+      "name": "open_interest_usd",
+      "type": "std/double"
     }
   ]
 }

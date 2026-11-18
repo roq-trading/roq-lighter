@@ -211,6 +211,22 @@
     {
       "name": "base_interest_rate",
       "type": "std/double"
+    },
+    {
+      "name": "fee_collector_account_index",
+      "type": "std/int32"
+    },
+    {
+      "name": "market_deployer",
+      "type": "std/string_view"
+    },
+    {
+      "name": "open_interest_limit",
+      "type": "std/double"
+    },
+    {
+      "name": "open_interest_usd",
+      "type": "std/double"
     }
   ]
 }

@@ -47,19 +47,6 @@
       "validator": "roq/flags/validators/TimePeriod",
       "default": "5s",
       "description": "Receive window (please refer to exchange documentation)"
-    },
-    {
-      "name": "terminate_on_403",
-      "type": "std/bool",
-      "default": false,
-      "description": "(TEST) Trigger program termination after receiving a 403 response code?"
-    },
-    {
-      "name": "back_off_delay",
-      "type": "std/nanoseconds",
-      "validator": "roq/flags/validators/TimePeriod",
-      "default": "30s",
-      "description": "(TEST) Time to wait before retrying a rejected request"
     }
   ]
 }

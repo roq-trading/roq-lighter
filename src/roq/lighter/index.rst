@@ -168,10 +168,6 @@ Flags
 
    .. include:: flags/ws.rstinc
 
-.. tab:: MBP
-
-   .. include:: flags/mbp.rstinc
-
 .. tab:: Request
 
    .. include:: flags/request.rstinc
