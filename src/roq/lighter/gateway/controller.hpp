@@ -92,16 +92,14 @@ struct Controller final : public Base<Controller>, public server::Handler, publi
 
  private:
   server::Dispatcher &dispatcher_;
-  // accounts
-  utils::unordered_map<std::string, std::unique_ptr<Account>> const accounts_;
-  // io
+  //
   io::Context &context_;
-  // shared
   Shared shared_;
-  // seed
   uint16_t stream_id_ = {};
-  // streams
-  Rest rest_;
+  //
+  utils::unordered_map<std::string, std::unique_ptr<Account>> const accounts_;
+  //
+  std::unique_ptr<Rest> rest_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
 };
 

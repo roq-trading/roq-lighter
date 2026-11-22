@@ -36,6 +36,10 @@ R create_accounts(auto &settings, auto &config) {
   }
   return result;
 }
+
+auto create_rest(auto &gateway, auto &context, auto &stream_id, auto &shared) {
+  return std::make_unique<Rest>(gateway, context, ++stream_id, shared);
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -63,8 +67,8 @@ uint8_t Controller::parse_api(Settings const &settings) {
 }
 
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
-      rest_{*this, context_, ++stream_id_, shared_} {
+    : dispatcher_{dispatcher}, context_{context}, shared_{dispatcher, settings}, accounts_{create_accounts<decltype(accounts_)>(settings, config)},
+      rest_{create_rest(*this, context_, stream_id_, shared_)} {
 }
 
 // server::Handler
@@ -180,7 +184,7 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(trace_info, size);
   for (auto &item : market_data_) {
-    (*item).subscribe(start_from);
+    dynamic_cast<server::MarketDataStream &>(*item).subscribe(start_from);
   }
 }
 
@@ -191,7 +195,7 @@ void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) 
     log::info("Create market-data (user-stream)"sv);
     auto obj = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
     Start start;
-    create_trace_and_dispatch(*obj, trace_info, start);
+    create_trace_and_dispatch(dynamic_cast<server::Stream &>(*obj), trace_info, start);
     market_data_.emplace_back(std::move(obj));
   }
 }
@@ -203,8 +207,14 @@ void Controller::dispatch(Args &&...args) {
 
 template <typename... Args>
 void Controller::dispatch_helper(auto &self, Args &&...args) {
-  auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
-  helper(self.rest_);
+  auto helper = [&](auto &target) {
+    if constexpr (std::is_const_v<decltype(self)>) {
+      dynamic_cast<server::Stream const &>(target)(std::forward<Args>(args)...);
+    } else {
+      dynamic_cast<server::Stream &>(target)(std::forward<Args>(args)...);
+    }
+  };
+  helper(*self.rest_);
   for (auto &item : self.market_data_) {
     helper(*item);
   }
