@@ -95,17 +95,16 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
 
 // server::Stream
 
-void Rest::operator()(Trace<Start> const &) {
-  (*connection_).start();
+void Rest::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
 }
 
-void Rest::operator()(Trace<Stop> const &) {
-  (*connection_).stop();
+void Rest::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
 }
 
 void Rest::operator()(Trace<Timer> const &event) {
-  auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(trace_info)) {
+  if ((*connection_)(event)) {
     if (ready()) {
     }
   }
