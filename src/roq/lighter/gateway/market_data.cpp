@@ -135,7 +135,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, ping_frequency_{shared.settings.ws.ping_freq},
+    : server::MarketDataStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, index_{index}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -200,16 +200,16 @@ void MarketData::operator()(metrics::Writer &writer) const {
 
 void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  if (utils::update(connection_status_, connection_status)) {
+  if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = {},
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
         .priority = Priority::PRIMARY,
-        .connection_status = connection_status_,
+        .connection_status = connection_status,
         .reason = reason,
         .interface = (*connection_).get_interface(),
         .proxy = (*connection_).get_proxy(),
@@ -238,12 +238,12 @@ void MarketData::operator()(Trace<web::socket::Connected> const &) {
 void MarketData::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
 }
 
 void MarketData::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+  publish(trace_info, ConnectionStatus::READY);
   subscribe();
 }
 
@@ -255,7 +255,7 @@ void MarketData::operator()(Trace<web::socket::Close> const &event) {
 void MarketData::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = {},
       .latency = latency.sample,
   };
@@ -329,7 +329,7 @@ void MarketData::operator()(Trace<protocol::json::OrderBook> const &event) {
       emplace_back(shared_.asks, item);
     }
     auto market_by_price_update = MarketByPriceUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .exchange = shared_.settings.exchange,
         .symbol = symbol,
         .bids = shared_.bids,
@@ -357,7 +357,7 @@ void MarketData::operator()(Trace<protocol::json::Ticker> const &event) {
     (*connection_).touch(trace_info.source_receive_time);
     auto update_type = parse_update_type(ticker.type);
     auto top_of_book = TopOfBook{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .exchange = shared_.settings.exchange,
         .symbol = ticker.ticker.symbol,
         .layer{
@@ -411,7 +411,7 @@ void MarketData::operator()(Trace<protocol::json::Trade> const &event) {
     auto symbol = shared_.get_symbol_from_market_id(market_id);
     if (!std::empty(symbol) && !std::empty(shared_.trades)) {
       auto trade_summary = TradeSummary{
-          .stream_id = stream_id_,
+          .stream_id = stream_id(),
           .exchange = shared_.settings.exchange,
           .symbol = symbol,
           .trades = shared_.trades,
@@ -463,7 +463,7 @@ void MarketData::operator()(Trace<protocol::json::MarketStats> const &event) {
         },
     }};
     auto statistics_update = StatisticsUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .exchange = shared_.settings.exchange,
         .symbol = market_stats.market_stats.symbol,
         .statistics = statistics,

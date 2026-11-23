@@ -76,7 +76,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context, shared)},
+    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, connection_{create_connection(*this, shared.settings, context, shared)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -126,16 +126,16 @@ void Rest::operator()(metrics::Writer &writer) const {
 
 void Rest::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  if (utils::update(connection_status_, connection_status)) {
+  if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = {},
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::HTTP,
         .encoding = {Encoding::JSON},
         .priority = Priority::PRIMARY,
-        .connection_status = connection_status_,
+        .connection_status = connection_status,
         .reason = reason,
         .interface = (*connection_).get_interface(),
         .proxy = (*connection_).get_proxy(),
@@ -162,7 +162,7 @@ void Rest::operator()(Trace<web::rest::Connected> const &event) {
 void Rest::operator()(Trace<web::rest::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   if (!download_.downloading()) {
     download_.reset();
   }
@@ -171,7 +171,7 @@ void Rest::operator()(Trace<web::rest::Disconnected> const &event) {
 void Rest::operator()(Trace<web::rest::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = {},
       .latency = latency.sample,
   };
@@ -183,22 +183,21 @@ void Rest::operator()(Trace<web::rest::Latency> const &event) {
 
 int32_t Rest::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case GET_ASSET_DETAILS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       get_asset_details();
       return 1;
     case GET_ORDER_BOOK_DETAILS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       get_order_book_details();
       return 1;
     case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      publish(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
@@ -309,7 +308,7 @@ void Rest::operator()(Trace<protocol::json::OrderBookDetailsAck> const &event) {
     auto tick_size = std::pow(10.0, -item.supported_price_decimals);           // ???
     auto trade_vol_step_size = std::pow(10.0, -item.supported_size_decimals);  // ???
     auto reference_data = ReferenceData{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .exchange = shared_.settings.exchange,
         .symbol = item.symbol,
         .description = {},
